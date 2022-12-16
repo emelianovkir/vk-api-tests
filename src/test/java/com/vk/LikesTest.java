@@ -23,13 +23,13 @@ public class LikesTest {
     private Integer postId;
     private Integer commentId;
 
-    @BeforeMethod
+    @BeforeMethod(alwaysRun = true)
     void beforeMethod() throws InterruptedException {
         //crutch to avoid error 'Too many requests per second'
         Thread.sleep(300);
     }
 
-    @BeforeTest
+    @BeforeTest(alwaysRun = true)
     void beforeTest() throws ClientException, ApiException {
         var vkClient = new VkClient();
 
@@ -165,7 +165,7 @@ public class LikesTest {
     }
 
 
-    @AfterTest
+    @AfterTest(alwaysRun = true)
     void afterTest() throws ClientException, ApiException {
         var okResponse = apiClient.wall()
                 .delete(userActor)

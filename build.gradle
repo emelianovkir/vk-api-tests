@@ -22,5 +22,12 @@ dependencies {
 test {
     systemProperty "java.util.logging.config.file", "logging.properties"
 
-    useTestNG()
+    useTestNG() {
+        def groups = System.getProperty('groups', 'positive, negative')
+        includeGroups groups
+    }
+
+    testLogging {
+        events "PASSED", "SKIPPED", "FAILED", "STANDARD_ERROR"
+    }
 }
