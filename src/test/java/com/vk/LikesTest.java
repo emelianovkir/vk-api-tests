@@ -8,13 +8,9 @@ import com.vk.api.sdk.client.actors.UserActor;
 import com.vk.api.sdk.exceptions.ApiException;
 import com.vk.api.sdk.exceptions.ClientException;
 import com.vk.api.sdk.objects.likes.Type;
-import com.vk.api.sdk.objects.wall.WallpostFull;
 import org.apache.commons.lang3.RandomUtils;
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,12 +20,13 @@ public class LikesTest {
     private VkApiClient apiClient;
     private UserActor userActor;
 
-    private WallpostFull wallPost;
+    private Integer postId;
+    private Integer commentId;
 
     @BeforeMethod
     void beforeMethod() throws InterruptedException {
         //crutch to avoid error 'Too many requests per second'
-        Thread.sleep(200);
+        Thread.sleep(300);
     }
 
     @BeforeTest
@@ -44,20 +41,30 @@ public class LikesTest {
                 .message("Automatically generated post for likes :)")
                 .execute();
 
-        var postUid = "%s_%s".formatted(userActor.getId(), postResponse.getPostId());
-        var wallPosts = apiClient.wall()
-                .getByIdExtended(userActor, postUid)
-                .execute()
-                .getItems();
+        Assert.assertNotNull(postResponse.getPostId(), "Post must be created!");
+        postId = postResponse.getPostId();
 
-        Assert.assertEquals(wallPosts.size(), 1, "One post must be created!");
-        wallPost = wallPosts.get(0);
+        var commentResponse = apiClient.wall()
+                .createComment(userActor, postId)
+                .message("Automatically generated comment for likes :)")
+                .execute();
+
+        Assert.assertNotNull(commentResponse.getCommentId(), "Comment must be created!");
+        commentId = commentResponse.getCommentId();
     }
 
-    @Test(groups = {"positive"})
-    void addOneLikeTest() throws ClientException, ApiException {
+    @DataProvider(name = "dataForTest")
+    public Object[][] createData1() {
+        return new Object[][]{
+                {Type.POST, postId},
+                {Type.COMMENT, commentId},
+        };
+    }
+
+    @Test(dataProvider = "dataForTest", groups = {"positive"})
+    void addOneLikeTest(Type type, Integer id) throws ClientException, ApiException {
         var addResponse = apiClient.likes()
-                .add(userActor, Type.POST, wallPost.getId())
+                .add(userActor, type, id)
                 .execute();
 
         Assert.assertEquals(addResponse.getLikes(), 1, "One like must be added!");
@@ -66,7 +73,7 @@ public class LikesTest {
     @Test(dependsOnMethods = "addOneLikeTest", groups = {"positive"})
     void isLikedByUserTest() throws ClientException, ApiException {
         var isLikedResponse = apiClient.likes()
-                .isLiked(userActor, Type.POST, wallPost.getId())
+                .isLiked(userActor, Type.POST, postId)
                 .execute();
 
         Assert.assertTrue(isLikedResponse.isLiked(), "The post must be on the user's 'Likes' list");
@@ -75,7 +82,7 @@ public class LikesTest {
     @Test(dependsOnMethods = "addOneLikeTest", groups = {"positive"})
     void listLikesHasOneTest() throws ClientException, ApiException {
         var listResult = apiClient.likes().getList(userActor, Type.POST)
-                .itemId(wallPost.getId())
+                .itemId(postId)
                 .execute();
 
         Assert.assertEquals(listResult.getCount(), 1, "Post must contain 1 like!");
@@ -85,7 +92,7 @@ public class LikesTest {
     @Test(dependsOnMethods = {"isLikedByUserTest", "listLikesHasOneTest"}, groups = {"positive"})
     void deleteOneLikeTest() throws ClientException, ApiException {
         var deleteResult = apiClient.likes()
-                .delete(userActor, Type.POST, wallPost.getId())
+                .delete(userActor, Type.POST, postId)
                 .execute();
 
         Assert.assertEquals(deleteResult.getLikes(), 0, "Like must be deleted!");
@@ -94,7 +101,7 @@ public class LikesTest {
     @Test(dependsOnMethods = "deleteOneLikeTest", groups = {"positive"})
     void isNotLikedByUserTest() throws ClientException, ApiException {
         var isLikedResponse = apiClient.likes()
-                .isLiked(userActor, Type.POST, wallPost.getId())
+                .isLiked(userActor, Type.POST, postId)
                 .execute();
 
         Assert.assertFalse(isLikedResponse.isLiked(), "The post mustn't be on the user's 'Likes' list");
@@ -103,7 +110,7 @@ public class LikesTest {
     @Test(dependsOnMethods = "deleteOneLikeTest", groups = {"positive"})
     void listLikesEmptyTest() throws ClientException, ApiException {
         var listResult = apiClient.likes().getList(userActor, Type.POST)
-                .itemId(wallPost.getId())
+                .itemId(postId)
                 .execute();
 
         Assert.assertEquals(listResult.getCount(), 0, "Post must contain 0 like!");
@@ -162,7 +169,7 @@ public class LikesTest {
     void afterTest() throws ClientException, ApiException {
         var okResponse = apiClient.wall()
                 .delete(userActor)
-                .postId(wallPost.getId())
+                .postId(postId)
                 .execute();
         Assert.assertEquals(okResponse.getValue(), "1", "Post must be deleted after tests!");
     }
