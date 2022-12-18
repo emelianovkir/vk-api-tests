@@ -10,6 +10,13 @@ https://dev.vk.com/method/likes
 
 ## Run tests
 
+You need to add user credentials to environment variables before running tests.
+```
+export VK_USER_ID="0123456"
+export VK_ACCESS_TOKEN="vk1.a.XXX"
+```
+
+After that the tests can be run with the commandline or IDE.
 ```
 ./gradlew clean test -Dgroups=negative,positive
 ```
