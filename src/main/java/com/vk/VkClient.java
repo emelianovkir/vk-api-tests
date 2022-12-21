@@ -1,11 +1,15 @@
 package com.vk;
 
+import com.vk.api.sdk.client.AbstractQueryBuilder;
 import com.vk.api.sdk.client.TransportClient;
 import com.vk.api.sdk.client.VkApiClient;
 import com.vk.api.sdk.client.actors.UserActor;
 import com.vk.api.sdk.exceptions.ApiException;
 import com.vk.api.sdk.exceptions.ClientException;
 import com.vk.api.sdk.httpclient.HttpTransportClient;
+import com.vk.api.sdk.objects.Validable;
+import com.vk.api.sdk.objects.likes.responses.IsLikedResponse;
+import com.vk.api.sdk.objects.wall.responses.PostResponse;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -51,6 +55,25 @@ public class VkClient {
         } catch (ApiException | ClientException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    <T> Validable execute(AbstractQueryBuilder query) {
+        try {
+            var response = query.execute();
+
+            if (response instanceof PostResponse)
+                return (PostResponse) response;
+            else if (response instanceof IsLikedResponse) {
+                return (IsLikedResponse) response;
+            }
+            else {
+                return (Validable) response;
+            }
+
+        } catch (ApiException | ClientException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     public VkApiClient getApiClient() {
